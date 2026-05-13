@@ -145,4 +145,40 @@ describe("parseCLIArgs", () => {
   it("throws when --quiet and --verbose are both passed", () => {
     expect(() => parseCLIArgs(["--quiet", "--verbose"])).toThrow("Conflicting log level flags");
   });
+
+  it("defaults --issue-id-pattern to undefined", () => {
+    const result = parseCLIArgs([]);
+    expect(result.issueIdPattern).toBeUndefined();
+  });
+
+  it("parses --issue-id-pattern into a RegExp", () => {
+    const result = parseCLIArgs(["--issue-id-pattern=^\\[(.+?)\\]"]);
+    expect(result.issueIdPattern).toBeInstanceOf(RegExp);
+    expect(result.issueIdPattern!.test("[LIN-1] foo")).toBe(true);
+  });
+
+  it("throws on invalid --issue-id-pattern regex", () => {
+    expect(() => parseCLIArgs(["--issue-id-pattern=["])).toThrow("Invalid --issue-id-pattern");
+  });
+
+  it("throws on --issue-id-pattern with no capture group", () => {
+    expect(() => parseCLIArgs(["--issue-id-pattern=^\\[.+?\\]"])).toThrow("exactly one capture group");
+  });
+
+  it("throws on --issue-id-pattern with multiple capture groups", () => {
+    expect(() => parseCLIArgs(["--issue-id-pattern=^(\\[)(.+?)\\]"])).toThrow("exactly one capture group");
+  });
+
+  it("treats --issue-id-pattern='' as absent", () => {
+    const result = parseCLIArgs(["--issue-id-pattern="]);
+    expect(result.issueIdPattern).toBeUndefined();
+  });
+
+  it("rejects --issue-id-pattern passed as /source/flags literal", () => {
+    expect(() => parseCLIArgs(["--issue-id-pattern=/^\\[(.+?)\\]/i"])).toThrow("pass the pattern source directly");
+  });
+
+  it("rejects --issue-id-pattern passed as /source/ literal with no flags", () => {
+    expect(() => parseCLIArgs(["--issue-id-pattern=/^\\[(.+?)\\]/"])).toThrow("pass the pattern source directly");
+  });
 });

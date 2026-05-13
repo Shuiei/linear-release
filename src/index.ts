@@ -52,6 +52,7 @@ Options:
   --release-version=<version>  Release version identifier
   --stage=<stage>            Deployment stage (required for update)
   --include-paths=<paths>    Filter commits by file paths (comma-separated globs)
+  --issue-id-pattern=<regex>  Detect issue IDs via a regex pattern (e.g. ^\\[(.+?)\\] for [LIN-123])
   --timeout=<seconds>        Abort if the operation exceeds this duration (default: 60)
   --json                     Output result as JSON (logs emitted as JSON Lines on stderr)
   --quiet                    Suppress info-level output (warnings and errors still printed)
@@ -68,6 +69,7 @@ Examples:
   linear-release complete
   linear-release update --stage=production
   linear-release sync --include-paths="apps/web/**,packages/**"
+  linear-release sync --issue-id-pattern='^\\[(.+?)\\]'
 `);
   process.exit(0);
 }
@@ -87,8 +89,17 @@ try {
   error(`${message} (run linear-release --help for usage)`);
   process.exit(1);
 }
-const { command, releaseName, releaseVersion, stageName, includePaths, jsonOutput, timeoutSeconds, logLevel } =
-  parsedArgs;
+const {
+  command,
+  releaseName,
+  releaseVersion,
+  stageName,
+  includePaths,
+  jsonOutput,
+  timeoutSeconds,
+  logLevel,
+  issueIdPattern,
+} = parsedArgs;
 const cliWarnings = getCLIWarnings(parsedArgs);
 setLogLevel(logLevel);
 if (jsonOutput) {
@@ -160,6 +171,10 @@ async function syncCommand(): Promise<{
     effectiveIncludePaths = null;
   }
 
+  if (issueIdPattern) {
+    verbose(`Using CLI --issue-id-pattern: ${issueIdPattern}`);
+  }
+
   const currentCommit = await getCurrentGitInfo();
 
   if (!currentCommit.commit) {
@@ -214,6 +229,7 @@ async function syncCommand(): Promise<{
   const { issueReferences, revertedIssueReferences, prNumbers, debugSink } = scanCommits(
     commits,
     effectiveIncludePaths,
+    { issueIdPattern },
   );
 
   verbose(`Debug sink: ${JSON.stringify(debugSink, null, 2)}`);
