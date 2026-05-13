@@ -145,4 +145,27 @@ describe("parseCLIArgs", () => {
   it("throws when --quiet and --verbose are both passed", () => {
     expect(() => parseCLIArgs(["--quiet", "--verbose"])).toThrow("Conflicting log level flags");
   });
+
+  it("defaults --commit-prefix-pattern to undefined", () => {
+    const result = parseCLIArgs([]);
+    expect(result.commitPrefixPattern).toBeUndefined();
+  });
+
+  it("parses --commit-prefix-pattern into a RegExp", () => {
+    const result = parseCLIArgs(["--commit-prefix-pattern=^\\[(.+?)\\]"]);
+    expect(result.commitPrefixPattern).toBeInstanceOf(RegExp);
+    expect(result.commitPrefixPattern!.test("[LIN-1] foo")).toBe(true);
+  });
+
+  it("throws on invalid --commit-prefix-pattern regex", () => {
+    expect(() => parseCLIArgs(["--commit-prefix-pattern=["])).toThrow("Invalid --commit-prefix-pattern");
+  });
+
+  it("throws on --commit-prefix-pattern with no capture group", () => {
+    expect(() => parseCLIArgs(["--commit-prefix-pattern=^\\[.+?\\]"])).toThrow("exactly one capture group");
+  });
+
+  it("throws on --commit-prefix-pattern with multiple capture groups", () => {
+    expect(() => parseCLIArgs(["--commit-prefix-pattern=^(\\[)(.+?)\\]"])).toThrow("exactly one capture group");
+  });
 });
